@@ -19,6 +19,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // タイムゾーンを日本時間に設定
+        date_default_timezone_set('Asia/Tokyo');
     }
 }

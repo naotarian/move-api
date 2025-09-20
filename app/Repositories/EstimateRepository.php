@@ -10,6 +10,7 @@ class EstimateRepository
 {
     /**
      * 見積もり一覧を取得（ページネーション付き）
+     * 店舗用: 公開中かつメール・電話認証済みの見積もりのみ
      */
     public function getPaginatedEstimates(int $perPage = 20, int $page = 1): LengthAwarePaginator
     {
@@ -18,13 +19,16 @@ class EstimateRepository
             'movingToAddress',
             'luggageItems.luggage.category'
         ])
-        ->where('status', Estimate::STATUS_PUBLISHED) // 公開中の見積もりのみ
-        ->orderBy('created_at', 'desc')
-        ->paginate($perPage, ['*'], 'page', $page);
+            ->where('status', Estimate::STATUS_PUBLISHED) // 公開中の見積もりのみ
+            ->where('email_verified', true) // メール認証済み
+            ->where('phone_verified', true) // 電話認証済み
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage, ['*'], 'page', $page);
     }
 
     /**
      * IDで見積もりを取得
+     * 店舗用: 公開中かつメール・電話認証済みの見積もりのみ
      */
     public function findById(string $id): ?Estimate
     {
@@ -32,14 +36,12 @@ class EstimateRepository
             'movingFromAddress',
             'movingToAddress',
             'luggageItems.luggage.category'
-        ])->find($id);
-
-        // デバッグ用ログ
-        \Log::info('EstimateRepository findById:', [
-            'id' => $id,
-            'found' => $estimate ? true : false,
-            'luggage_items_count' => $estimate && $estimate->luggageItems ? $estimate->luggageItems->count() : 0,
-        ]);
+        ])
+            ->where('id', $id)
+            ->where('status', Estimate::STATUS_PUBLISHED) // 公開中の見積もりのみ
+            ->where('email_verified', true) // メール認証済み
+            ->where('phone_verified', true) // 電話認証済み
+            ->first();
 
         return $estimate;
     }
@@ -88,8 +90,8 @@ class EstimateRepository
             'movingToAddress',
             'luggageItems.luggage.category'
         ])
-        ->orderBy('created_at', 'desc')
-        ->get();
+            ->orderBy('created_at', 'desc')
+            ->get();
     }
 
     /**
@@ -102,9 +104,9 @@ class EstimateRepository
             'movingToAddress',
             'luggageItems.luggage.category'
         ])
-        ->where('status', $status)
-        ->orderBy('created_at', 'desc')
-        ->get();
+            ->where('status', $status)
+            ->orderBy('created_at', 'desc')
+            ->get();
     }
 
     /**

@@ -15,6 +15,8 @@ class DatabaseSeeder extends Seeder
             LuggageCategorySeeder::class,
             LuggageMasterSeeder::class,
             EstimateSeeder::class,
+            EmailVerificationTokenSeeder::class, // EstimateSeeder実行後に追加
+            SmsVerificationCodeSeeder::class, // EstimateSeeder実行後に追加
             StoreSeeder::class,
             AdminSeeder::class,
         ]);

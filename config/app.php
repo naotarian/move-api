@@ -54,6 +54,12 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:3000'),
+    'store_url' => env('STORE_URL', 'http://localhost:3001'),
+
+    'api_url' => env('API_URL', 'http://localhost:8000'),
+    'admin_url' => env('ADMIN_URL', 'http://localhost:3002'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone
@@ -65,7 +71,7 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => 'Asia/Tokyo',
 
     /*
     |--------------------------------------------------------------------------

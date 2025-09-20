@@ -48,7 +48,6 @@ class ExportLuggageData extends Command
 
         // 統合データをエクスポート
         $this->exportCombinedData($outputPath);
-        \Log::info($outputPath);
 
         $this->info('Export completed successfully!');
     }
@@ -74,7 +73,7 @@ class ExportLuggageData extends Command
 
         $filePath = $outputPath . '/luggage-categories.json';
         File::put($filePath, json_encode($categories, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-        
+
         $this->info("Exported categories to: {$filePath}");
     }
 
@@ -104,7 +103,7 @@ class ExportLuggageData extends Command
 
         $filePath = $outputPath . '/luggage-master.json';
         File::put($filePath, json_encode($luggageItems, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-        
+
         $this->info("Exported luggage master to: {$filePath}");
     }
 
@@ -143,7 +142,7 @@ class ExportLuggageData extends Command
 
         $filePath = $outputPath . '/luggage-data.json';
         File::put($filePath, json_encode($categories, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-        
+
         $this->info("Exported combined data to: {$filePath}");
     }
 }

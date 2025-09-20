@@ -4,28 +4,101 @@ namespace App\Services\Portal;
 
 use App\Repositories\Portal\EstimateRepository;
 use App\Models\Estimate;
-use App\Models\MovingFromAddress;
-use App\Models\MovingToAddress;
-use App\Models\EstimateLuggage;
+use App\Services\GeocodingService;
+use Illuminate\Support\Facades\Log;
 
 class EstimateService
 {
     public function __construct(
-        private EstimateRepository $estimateRepository
+        private EstimateRepository $estimateRepository,
+        private GeocodingService $geocodingService
     ) {}
 
+
     /**
-     * 見積もりを作成
+     * Geocoding付きで見積もりを作成
      */
-    public function createEstimate(array $data): array
+    public function createEstimateWithGeocoding(array $data): Estimate
     {
+        Log::info('Portal EstimateService: Starting estimate creation with geocoding', [
+            'customer_name' => $data['name'] ?? 'N/A'
+        ]);
+
         // 見積もりデータを作成
         $estimate = $this->estimateRepository->create($data);
-        
-        // 作成された見積もりの詳細データを取得
-        $estimateDetail = $this->getEstimateDetail($estimate->id);
-        
-        return $estimateDetail;
+
+        // 住所データの準備（引越し元）
+        $fromAddressData = [
+            'estimate_id' => $estimate->id,
+            'zipcode' => $data['from_zipcode'] ?? '',
+            'prefecture' => $data['from_prefecture'] ?? '',
+            'street_address' => $data['from_street_address'] ?? '',
+            'building_details' => $data['from_building_details'] ?? null,
+            'building_type' => $data['from_building_type'] ?? '',
+            'room_layout' => $data['from_room_layout'] ?? '',
+            'floor' => $data['from_floor'] ?? '',
+            'elevator' => $data['from_elevator'] ?? '',
+        ];
+
+        // 引越し元住所のGeocodingと作成
+        $fromAddress = $this->geocodingService->buildFullAddress($fromAddressData);
+        Log::info('Portal EstimateService: Built from address', ['from_address' => $fromAddress]);
+
+        $fromCoords = $this->geocodingService->geocode($fromAddress);
+        Log::info('Portal EstimateService: From address geocoded', [
+            'from_address' => $fromAddress,
+            'from_coords' => $fromCoords
+        ]);
+
+        if ($fromCoords) {
+            $fromAddressData['latitude'] = $fromCoords['lat'];
+            $fromAddressData['longitude'] = $fromCoords['lng'];
+        }
+
+        $estimate->movingFromAddress()->create($fromAddressData);
+
+        // 住所データの準備（引越し先）
+        $toAddressData = [
+            'estimate_id' => $estimate->id,
+            'zipcode' => $data['to_zipcode'] ?? '',
+            'prefecture' => $data['to_prefecture'] ?? '',
+            'street_address' => $data['to_street_address'] ?? '',
+            'building_details' => $data['to_building_details'] ?? null,
+            'building_type' => $data['to_building_type'] ?? '',
+            'room_layout' => $data['to_room_layout'] ?? '',
+            'floor' => $data['to_floor'] ?? '',
+            'elevator' => $data['to_elevator'] ?? '',
+        ];
+
+        // 引越し先住所のGeocodingと作成
+        $toAddress = $this->geocodingService->buildFullAddress($toAddressData);
+        Log::info('Portal EstimateService: Built to address', ['to_address' => $toAddress]);
+
+        $toCoords = $this->geocodingService->geocode($toAddress);
+        Log::info('Portal EstimateService: To address geocoded', [
+            'to_address' => $toAddress,
+            'to_coords' => $toCoords
+        ]);
+
+        if ($toCoords) {
+            $toAddressData['latitude'] = $toCoords['lat'];
+            $toAddressData['longitude'] = $toCoords['lng'];
+        }
+
+        $estimate->movingToAddress()->create($toAddressData);
+
+        // 直線距離の計算と保存
+        if ($fromCoords && $toCoords) {
+            $distance = $this->geocodingService->calculateDistance($fromCoords, $toCoords);
+            $estimate->update(['straight_distance_km' => $distance]);
+
+            Log::info('Portal EstimateService: Distance calculated successfully', [
+                'estimate_id' => $estimate->id,
+                'distance_km' => $distance
+            ]);
+        }
+
+        return $estimate;
     }
 
     /**
@@ -34,7 +107,7 @@ class EstimateService
     public function getEstimateDetail(string $id): ?array
     {
         $estimate = $this->estimateRepository->findById($id);
-        
+
         if (!$estimate) {
             return null;
         }

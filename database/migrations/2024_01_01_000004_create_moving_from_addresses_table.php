@@ -22,8 +22,10 @@ return new class extends Migration
             $table->string('room_layout', 50)->comment('間取り');
             $table->string('floor', 20)->comment('お住まいの階数');
             $table->string('elevator', 10)->comment('エレベーター');
+            $table->decimal('latitude', 10, 8)->nullable()->comment('緯度');
+            $table->decimal('longitude', 11, 8)->nullable()->comment('経度');
             $table->timestamps();
-            
+
             // インデックス
             $table->index('estimate_id', 'idx_moving_from_addresses_estimate_id');
             $table->index(['prefecture', 'zipcode'], 'idx_moving_from_addresses_location');

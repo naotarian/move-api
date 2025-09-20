@@ -26,7 +26,7 @@ class EstimateService
     public function getEstimateDetail(string $id): ?array
     {
         $estimate = $this->estimateRepository->findById($id);
-        
+
         if (!$estimate) {
             return null;
         }
@@ -84,6 +84,17 @@ class EstimateService
             'work_start_time' => $estimate->work_start_time,
             'other_luggage' => $estimate->other_luggage,
             'status' => $estimate->status,
+            'email_verified' => $estimate->email_verified,
+            'phone_verified' => $estimate->phone_verified,
+            'verification_completed' => $estimate->email_verified && $estimate->phone_verified,
+            'bid_deadline' => $estimate->bid_deadline?->format('Y-m-d H:i:s'),
+            'purchase_deadline' => $estimate->getBidRightPurchaseDeadline()?->format('Y-m-d H:i:s'),
+            'is_within_purchase_deadline' => $estimate->isWithinPurchaseDeadline(),
+            'is_purchase_deadline_expired' => $estimate->isPurchaseDeadlineExpired(),
+            'remaining_purchase_minutes' => $estimate->remaining_purchase_minutes,
+            'is_within_bid_deadline' => $estimate->isWithinBidDeadline(),
+            'is_bid_deadline_expired' => $estimate->isBidDeadlineExpired(),
+            'remaining_bid_hours' => $estimate->remaining_bid_hours,
             'created_at' => $estimate->created_at->format('Y-m-d H:i:s'),
             'updated_at' => $estimate->updated_at->format('Y-m-d H:i:s'),
         ];
@@ -94,13 +105,7 @@ class EstimateService
      */
     private function formatEstimateData($estimate): array
     {
-        // デバッグ用ログ
-        \Log::info('formatEstimateData - estimate:', [
-            'id' => $estimate->id,
-            'luggage_items_count' => $estimate->luggageItems ? $estimate->luggageItems->count() : 0,
-            'luggage_items' => $estimate->luggageItems ? $estimate->luggageItems->toArray() : [],
-        ]);
-
+        \Log::info($estimate->toArray());
         return [
             'id' => $estimate->id,
             'customer_name' => $estimate->name,
@@ -117,6 +122,8 @@ class EstimateService
                 'floor_plan' => $estimate->movingFromAddress->room_layout,
                 'floor_number' => $estimate->movingFromAddress->floor,
                 'has_elevator' => $this->formatElevator($estimate->movingFromAddress->elevator),
+                'latitude' => $estimate->movingFromAddress->latitude,
+                'longitude' => $estimate->movingFromAddress->longitude,
             ],
             'moving_to' => [
                 'zipcode' => $estimate->movingToAddress->zipcode,
@@ -128,6 +135,8 @@ class EstimateService
                 'floor_plan' => $estimate->movingToAddress->room_layout,
                 'floor_number' => $estimate->movingToAddress->floor,
                 'has_elevator' => $this->formatElevator($estimate->movingToAddress->elevator),
+                'latitude' => $estimate->movingToAddress->latitude,
+                'longitude' => $estimate->movingToAddress->longitude,
             ],
             'moving_date_type' => $estimate->moving_date_type,
             'moving_date' => $estimate->moving_specific_date,
@@ -138,11 +147,23 @@ class EstimateService
             'work_start_time' => $estimate->work_start_time,
             'other_luggage' => $estimate->other_luggage,
             'status' => $estimate->status,
+            'email_verified' => $estimate->email_verified,
+            'phone_verified' => $estimate->phone_verified,
+            'verification_completed' => $estimate->email_verified && $estimate->phone_verified,
+            'bid_deadline' => $estimate->bid_deadline?->format('Y-m-d H:i:s'),
+            'purchase_deadline' => $estimate->getBidRightPurchaseDeadline()?->format('Y-m-d H:i:s'),
+            'is_within_purchase_deadline' => $estimate->isWithinPurchaseDeadline(),
+            'is_purchase_deadline_expired' => $estimate->isPurchaseDeadlineExpired(),
+            'remaining_purchase_minutes' => $estimate->remaining_purchase_minutes,
+            'is_within_bid_deadline' => $estimate->isWithinBidDeadline(),
+            'is_bid_deadline_expired' => $estimate->isBidDeadlineExpired(),
+            'remaining_bid_hours' => $estimate->remaining_bid_hours,
+            'straight_distance_km' => $estimate->straight_distance_km,
             'luggage_items' => $estimate->luggageItems->map(function ($item) {
                 return [
                     'id' => $item->id,
                     'quantity' => $item->quantity,
-                    'luggage_master' => [
+                    'luggage' => [
                         'id' => $item->luggage->id,
                         'name' => $item->luggage->name,
                         'category' => $item->luggage->category->name,

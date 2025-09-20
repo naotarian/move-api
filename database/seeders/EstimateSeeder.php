@@ -32,6 +32,11 @@ class EstimateSeeder extends Seeder
                 'work_start_time' => $this->convertWorkStartTime($estimateData['work_start_time'] ?? null),
                 'other_luggage' => $estimateData['other_luggage'],
                 'status' => $this->convertStatus($estimateData['status']),
+                // 認証フラグ（テストデータ用）
+                'email_verified' => $this->generateVerificationStatus($i, 'email'),
+                'email_verified_at' => $this->generateVerificationTimestamp($i, 'email'),
+                'phone_verified' => $this->generateVerificationStatus($i, 'phone'),
+                'phone_verified_at' => $this->generateVerificationTimestamp($i, 'phone'),
             ];
 
             $fromAddressData = [
@@ -342,5 +347,40 @@ class EstimateSeeder extends Seeder
             '戸建て' => 'house',
             default => 'other'
         };
+    }
+
+    /**
+     * 認証ステータスを生成（テストデータ用）
+     */
+    private function generateVerificationStatus(int $index, string $type): bool
+    {
+        // 認証パターンを作成（テストしやすくするため）
+        return match (true) {
+            // 最初の10件: 完全認証済み
+            $index <= 10 => true,
+            // 11-20件: メールのみ認証済み
+            $index <= 20 && $type === 'email' => true,
+            $index <= 20 && $type === 'phone' => false,
+            // 21-30件: 電話のみ認証済み
+            $index <= 30 && $type === 'email' => false,
+            $index <= 30 && $type === 'phone' => true,
+            // 31-50件: 未認証
+            $index <= 50 => false,
+            // 51-100件: ランダム
+            default => rand(0, 1) === 1,
+        };
+    }
+
+    /**
+     * 認証タイムスタンプを生成（テストデータ用）
+     */
+    private function generateVerificationTimestamp(int $index, string $type): ?Carbon
+    {
+        if (!$this->generateVerificationStatus($index, $type)) {
+            return null;
+        }
+
+        // 認証済みの場合は、作成日時から1-24時間後にランダムで認証完了
+        return Carbon::now()->subDays(rand(0, 30))->addHours(rand(1, 24));
     }
 }

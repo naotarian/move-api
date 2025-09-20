@@ -33,10 +33,14 @@ class MovingFromAddress extends Model
         'room_layout',
         'floor',
         'elevator',
+        'latitude',
+        'longitude',
     ];
 
     protected $casts = [
         'estimate_id' => 'string',
+        'latitude' => 'decimal:8',
+        'longitude' => 'decimal:8',
     ];
 
     /**

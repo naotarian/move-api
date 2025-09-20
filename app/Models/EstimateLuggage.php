@@ -69,9 +69,9 @@ class EstimateLuggage extends Model
     public function scopeGroupByCategory($query)
     {
         return $query->join('luggage_master', 'estimate_luggage.luggage_id', '=', 'luggage_master.id')
-                    ->join('luggage_categories', 'luggage_master.category_id', '=', 'luggage_categories.id')
-                    ->selectRaw('luggage_categories.name as category_name, COUNT(*) as count, SUM(estimate_luggage.quantity) as total_quantity')
-                    ->groupBy('luggage_categories.id', 'luggage_categories.name');
+            ->join('luggage_categories', 'luggage_master.category_id', '=', 'luggage_categories.id')
+            ->selectRaw('luggage_categories.name as category_name, COUNT(*) as count, SUM(estimate_luggage.quantity) as total_quantity')
+            ->groupBy('luggage_categories.id', 'luggage_categories.name');
     }
 
     /**

@@ -1,8 +1,16 @@
 <?php
 
 use App\Http\Controllers\Api\LuggageController;
+// Portal
 use App\Http\Controllers\Api\Portal\EstimateController as PortalEstimateController;
+// Store
 use App\Http\Controllers\Api\Store\EstimateController as StoreEstimateController;
+use App\Http\Controllers\Api\Store\PaymentController as StorePaymentController;
+use App\Http\Controllers\Api\Store\EstimateBidRightController as StoreEstimateBidRightController;
+use App\Http\Controllers\Api\Store\StripeController as StoreStripeController;
+use App\Http\Controllers\Api\Store\BidController as StoreBidController;
+use App\Http\Controllers\Api\Store\PurchaseHistoryController as StorePurchaseHistoryController;
+// Admin
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\StoreController;
 use Illuminate\Http\Request;
@@ -38,6 +46,15 @@ Route::prefix('estimate')->group(function () {
     Route::get('/{id}', [StoreEstimateController::class, 'show'])->middleware('auth:store'); // 見積もり詳細（店舗用）-
 });
 
+// 認証関連のAPI（フロントエンド用）
+Route::prefix('verification')->group(function () {
+    Route::post('/resend-email', [PortalEstimateController::class, 'resendEmailVerification']); // メール認証再送
+    Route::get('/verify-email', [PortalEstimateController::class, 'verifyEmail']); // メール認証確認
+    Route::get('/sms-status', [PortalEstimateController::class, 'getSmsStatus']); // SMS送信状況取得
+    Route::post('/resend-sms', [PortalEstimateController::class, 'resendSmsVerification']); // SMS認証再送
+    Route::post('/verify-sms', [PortalEstimateController::class, 'verifySms']); // SMS認証確認
+});
+
 // 管理者認証関連のAPI
 Route::prefix('admin')->group(function () {
     Route::post('/login', [AdminController::class, 'login']); // ログイン
@@ -54,4 +71,32 @@ Route::prefix('store')->group(function () {
     Route::get('/verify', [StoreController::class, 'verify'])->middleware('auth:store'); // トークン検証
     Route::get('/', [StoreController::class, 'index'])->middleware('auth:admin'); // 店舗一覧（管理者のみ）
     Route::post('/', [StoreController::class, 'store'])->middleware('auth:admin'); // 店舗作成（管理者のみ）
+
+    Route::prefix('payment')->group(function () {
+        Route::get('/{estimateId}/{storeId}', [StorePaymentController::class, 'store']); // 支払い作成
+    });
+
+    Route::prefix('estimate-bid-rights')->group(function () {
+        Route::post('/', [StoreEstimateBidRightController::class, 'store'])->middleware('auth:store'); // 入札権作成
+        Route::get('/', [StoreEstimateBidRightController::class, 'index'])->middleware('auth:store'); // 入札状況
+        Route::post('/check', [StoreEstimateBidRightController::class, 'check'])->middleware('auth:store'); // 入札権確認
+    });
+
+    Route::prefix('estimates/{estimateId}/bids')->group(function () {
+        Route::get('/', [StoreBidController::class, 'index'])->middleware('auth:store'); // 入札一覧取得
+        Route::post('/', [StoreBidController::class, 'store'])->middleware('auth:store'); // 入札作成
+        Route::get('/my', [StoreBidController::class, 'getMyBid'])->middleware('auth:store'); // 自分の入札取得
+    });
+
+    // 購入履歴関連のAPI
+    Route::prefix('purchase-history')->group(function () {
+        Route::get('/', [StorePurchaseHistoryController::class, 'index'])->middleware('auth:store'); // 購入履歴一覧
+    });
+});
+
+// Stripe決済関連のAPI（Webhookは認証不要）
+Route::prefix('stripe')->group(function () {
+    Route::post('/create-checkout-session', [StoreStripeController::class, 'createCheckoutSession'])->middleware('auth:store');
+    Route::get('/success', [StoreStripeController::class, 'handleSuccess']); // 決済成功後の処理
+    Route::post('/webhook', [StoreStripeController::class, 'handleWebhook']); // Webhook用（認証不要）
 });

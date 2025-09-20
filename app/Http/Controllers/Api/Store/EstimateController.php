@@ -21,14 +21,11 @@ class EstimateController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            \Log::info('見積もり一覧取得コントローラー:');
-            \Log::info($request->user());
             $perPage = $request->get('per_page', 20);
             $page = $request->get('page', 1);
 
             // UseCaseを実行
             $result = $this->getEstimatesListUseCase->execute($perPage, $page);
-            \Log::info('見積もり一覧取得コントローラー:', $result);
             return response()->json([
                 'success' => true,
                 'data' => $result['data'],
