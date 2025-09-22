@@ -12,16 +12,45 @@ class EstimateRepository
      * 見積もり一覧を取得（ページネーション付き）
      * 店舗用: 公開中かつメール・電話認証済みの見積もりのみ
      */
-    public function getPaginatedEstimates(int $perPage = 20, int $page = 1): LengthAwarePaginator
+    public function getPaginatedEstimates(string $storeId, int $perPage = 20, int $page = 1): LengthAwarePaginator
     {
         return Estimate::with([
             'movingFromAddress',
             'movingToAddress',
-            'luggageItems.luggage.category'
+            'luggageItems.luggage.category',
+            'estimateBidRights.bid',
         ])
+            ->selectRaw('estimates.*, 
+                EXISTS(
+                    SELECT 1 FROM estimate_bid_rights 
+                    WHERE estimate_bid_rights.estimate_id = estimates.id 
+                    AND estimate_bid_rights.store_id = ? 
+                    AND estimate_bid_rights.status = 1
+                ) as has_bid_right,
+                EXISTS(
+                    SELECT 1 FROM bids 
+                    INNER JOIN estimate_bid_rights ON bids.estimate_bid_right_id = estimate_bid_rights.id 
+                    WHERE estimate_bid_rights.estimate_id = estimates.id 
+                    AND estimate_bid_rights.store_id = ?
+                ) as has_bid,
+                (
+                    SELECT bids.bid_amount_min FROM bids 
+                    INNER JOIN estimate_bid_rights ON bids.estimate_bid_right_id = estimate_bid_rights.id 
+                    WHERE estimate_bid_rights.estimate_id = estimates.id 
+                    AND estimate_bid_rights.store_id = ?
+                    LIMIT 1
+                ) as bid_amount_min,
+                (
+                    SELECT bids.bid_amount_max FROM bids 
+                    INNER JOIN estimate_bid_rights ON bids.estimate_bid_right_id = estimate_bid_rights.id 
+                    WHERE estimate_bid_rights.estimate_id = estimates.id 
+                    AND estimate_bid_rights.store_id = ?
+                    LIMIT 1
+                ) as bid_amount_max', [$storeId, $storeId, $storeId, $storeId])
             ->where('status', Estimate::STATUS_PUBLISHED) // 公開中の見積もりのみ
             ->where('email_verified', true) // メール認証済み
             ->where('phone_verified', true) // 電話認証済み
+            ->where('bid_deadline', '>=', now()) // 入札期限切れではない
             ->orderBy('created_at', 'desc')
             ->paginate($perPage, ['*'], 'page', $page);
     }
@@ -30,13 +59,46 @@ class EstimateRepository
      * IDで見積もりを取得
      * 店舗用: 公開中かつメール・電話認証済みの見積もりのみ
      */
-    public function findById(string $id): ?Estimate
+    public function findById(string $id, ?string $storeId = null): ?Estimate
     {
-        $estimate = Estimate::with([
+        $query = Estimate::with([
             'movingFromAddress',
             'movingToAddress',
             'luggageItems.luggage.category'
-        ])
+        ]);
+
+        // 店舗IDが指定された場合は入札権の有無と入札の有無、入札金額を追加
+        if ($storeId) {
+            $query->selectRaw('estimates.*, 
+                EXISTS(
+                    SELECT 1 FROM estimate_bid_rights 
+                    WHERE estimate_bid_rights.estimate_id = estimates.id 
+                    AND estimate_bid_rights.store_id = ? 
+                    AND estimate_bid_rights.status = 1
+                ) as has_bid_right,
+                EXISTS(
+                    SELECT 1 FROM bids 
+                    INNER JOIN estimate_bid_rights ON bids.estimate_bid_right_id = estimate_bid_rights.id 
+                    WHERE estimate_bid_rights.estimate_id = estimates.id 
+                    AND estimate_bid_rights.store_id = ?
+                ) as has_bid,
+                (
+                    SELECT bids.bid_amount_min FROM bids 
+                    INNER JOIN estimate_bid_rights ON bids.estimate_bid_right_id = estimate_bid_rights.id 
+                    WHERE estimate_bid_rights.estimate_id = estimates.id 
+                    AND estimate_bid_rights.store_id = ?
+                    LIMIT 1
+                ) as bid_amount_min,
+                (
+                    SELECT bids.bid_amount_max FROM bids 
+                    INNER JOIN estimate_bid_rights ON bids.estimate_bid_right_id = estimate_bid_rights.id 
+                    WHERE estimate_bid_rights.estimate_id = estimates.id 
+                    AND estimate_bid_rights.store_id = ?
+                    LIMIT 1
+                ) as bid_amount_max', [$storeId, $storeId, $storeId, $storeId]);
+        }
+
+        $estimate = $query
             ->where('id', $id)
             ->where('status', Estimate::STATUS_PUBLISHED) // 公開中の見積もりのみ
             ->where('email_verified', true) // メール認証済み

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use DateTimeInterface;
 
 class Estimate extends Model
@@ -119,6 +120,28 @@ class Estimate extends Model
         return $this->hasMany(SmsVerificationCode::class);
     }
 
+    /**
+     * 入札権とのリレーション
+     */
+    public function estimateBidRights(): HasMany
+    {
+        return $this->hasMany(EstimateBidRight::class);
+    }
+
+    /**
+     * 入札とのリレーション（EstimateBidRight経由）
+     */
+    public function bids(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            Bid::class,
+            EstimateBidRight::class,
+            'estimate_id', // EstimateBidRightの外部キー
+            'estimate_bid_right_id', // Bidの外部キー
+            'id', // Estimateのローカルキー
+            'id'  // EstimateBidRightのローカルキー
+        );
+    }
 
     /**
      * ステータススコープ

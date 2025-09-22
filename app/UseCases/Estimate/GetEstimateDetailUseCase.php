@@ -14,18 +14,18 @@ class GetEstimateDetailUseCase
     /**
      * 見積もり詳細を取得する
      */
-    public function execute(string $id): ?array
+    public function execute(string $id, ?string $storeId = null): ?array
     {
         try {
             // トランザクション内でデータを取得
-            return DB::transaction(function () use ($id) {
+            return DB::transaction(function () use ($id, $storeId) {
                 // 見積もり詳細を取得
-                $estimateDetail = $this->estimateService->getEstimateDetail($id);
-                
+                $estimateDetail = $this->estimateService->getEstimateDetail($id, $storeId);
+
                 if (!$estimateDetail) {
                     return null;
                 }
-                
+
                 return $estimateDetail;
             });
         } catch (\Exception $e) {
@@ -33,7 +33,7 @@ class GetEstimateDetailUseCase
                 'estimate_id' => $id,
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             throw new \Exception('見積もり詳細の取得に失敗しました');
         }
     }

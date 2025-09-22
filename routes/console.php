@@ -10,3 +10,6 @@ Artisan::command('inspire', function () {
 
 // 期限切れの見積もりを毎時0分にクローズ
 Schedule::command('estimates:close-expired')->hourly();
+
+// 入札期限バッチ処理を毎時5分に実行
+Schedule::command('bid:process-deadline')->hourlyAt(5);

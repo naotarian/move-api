@@ -14,14 +14,14 @@ class GetEstimatesListUseCase
     /**
      * 見積もり一覧を取得する
      */
-    public function execute(int $perPage = 20, int $page = 1): array
+    public function execute(string $storeId, int $perPage = 20, int $page = 1): array
     {
         try {
             // トランザクション内でデータを取得
-            return DB::transaction(function () use ($perPage, $page) {
+            return DB::transaction(function () use ($storeId, $perPage, $page) {
                 // 見積もり一覧を取得
-                $estimates = $this->estimateService->getPaginatedEstimates($perPage, $page);
-                
+                $estimates = $this->estimateService->getPaginatedEstimates($storeId, $perPage, $page);
+
                 // データを整形して返す
                 return $this->estimateService->formatEstimatesList($estimates);
             });
@@ -31,7 +31,7 @@ class GetEstimatesListUseCase
                 'page' => $page,
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             throw new \Exception('見積もり一覧の取得に失敗しました');
         }
     }

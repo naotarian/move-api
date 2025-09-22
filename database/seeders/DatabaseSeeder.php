@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             SmsVerificationCodeSeeder::class, // EstimateSeeder実行後に追加
             StoreSeeder::class,
             AdminSeeder::class,
+            BidTestSeeder::class, // 入札テスト用データ
         ]);
     }
 }

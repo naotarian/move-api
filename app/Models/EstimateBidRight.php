@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class EstimateBidRight extends Model
 {
@@ -56,6 +57,14 @@ class EstimateBidRight extends Model
     public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class);
+    }
+
+    /**
+     * 入札とのリレーション
+     */
+    public function bid(): HasOne
+    {
+        return $this->hasOne(Bid::class);
     }
 
     /**

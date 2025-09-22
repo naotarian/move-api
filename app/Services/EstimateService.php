@@ -15,17 +15,17 @@ class EstimateService
     /**
      * 見積もり一覧を取得（ページネーション付き）
      */
-    public function getPaginatedEstimates(int $perPage = 20, int $page = 1): LengthAwarePaginator
+    public function getPaginatedEstimates(string $storeId, int $perPage = 20, int $page = 1): LengthAwarePaginator
     {
-        return $this->estimateRepository->getPaginatedEstimates($perPage, $page);
+        return $this->estimateRepository->getPaginatedEstimates($storeId, $perPage, $page);
     }
 
     /**
      * 見積もり詳細を取得
      */
-    public function getEstimateDetail(string $id): ?array
+    public function getEstimateDetail(string $id, ?string $storeId = null): ?array
     {
-        $estimate = $this->estimateRepository->findById($id);
+        $estimate = $this->estimateRepository->findById($id, $storeId);
 
         if (!$estimate) {
             return null;
@@ -95,6 +95,10 @@ class EstimateService
             'is_within_bid_deadline' => $estimate->isWithinBidDeadline(),
             'is_bid_deadline_expired' => $estimate->isBidDeadlineExpired(),
             'remaining_bid_hours' => $estimate->remaining_bid_hours,
+            'has_bid_right' => isset($estimate->has_bid_right) ? (bool)$estimate->has_bid_right : null,
+            'has_bid' => isset($estimate->has_bid) ? (bool)$estimate->has_bid : null,
+            'bid_amount_min' => isset($estimate->bid_amount_min) ? (int)$estimate->bid_amount_min : null,
+            'bid_amount_max' => isset($estimate->bid_amount_max) ? (int)$estimate->bid_amount_max : null,
             'created_at' => $estimate->created_at->format('Y-m-d H:i:s'),
             'updated_at' => $estimate->updated_at->format('Y-m-d H:i:s'),
         ];
@@ -159,6 +163,10 @@ class EstimateService
             'is_bid_deadline_expired' => $estimate->isBidDeadlineExpired(),
             'remaining_bid_hours' => $estimate->remaining_bid_hours,
             'straight_distance_km' => $estimate->straight_distance_km,
+            'has_bid_right' => isset($estimate->has_bid_right) ? (bool)$estimate->has_bid_right : null,
+            'has_bid' => isset($estimate->has_bid) ? (bool)$estimate->has_bid : null,
+            'bid_amount_min' => isset($estimate->bid_amount_min) ? (int)$estimate->bid_amount_min : null,
+            'bid_amount_max' => isset($estimate->bid_amount_max) ? (int)$estimate->bid_amount_max : null,
             'luggage_items' => $estimate->luggageItems->map(function ($item) {
                 return [
                     'id' => $item->id,

@@ -7,6 +7,7 @@ use App\UseCases\Estimate\GetEstimatesListUseCase;
 use App\UseCases\Estimate\GetEstimateDetailUseCase;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
 
 class EstimateController extends Controller
 {
@@ -21,11 +22,13 @@ class EstimateController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
+            // ログイン中の店舗のIDを取得
+            $storeId = Auth::id();
             $perPage = $request->get('per_page', 20);
             $page = $request->get('page', 1);
 
             // UseCaseを実行
-            $result = $this->getEstimatesListUseCase->execute($perPage, $page);
+            $result = $this->getEstimatesListUseCase->execute($storeId, $perPage, $page);
             return response()->json([
                 'success' => true,
                 'data' => $result['data'],
@@ -50,8 +53,11 @@ class EstimateController extends Controller
     public function show(string $id): JsonResponse
     {
         try {
+            // ログイン中の店舗のIDを取得
+            $storeId = Auth::id();
+
             // UseCaseを実行
-            $estimate = $this->getEstimateDetailUseCase->execute($id);
+            $estimate = $this->getEstimateDetailUseCase->execute($id, $storeId);
 
             if (!$estimate) {
                 return response()->json([
