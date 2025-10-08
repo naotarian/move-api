@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -16,6 +17,7 @@ class Store extends Authenticatable
     protected $table = 'stores';
 
     protected $fillable = [
+        'organization_id',
         'name',
         'email',
         'password',
@@ -23,6 +25,7 @@ class Store extends Authenticatable
         'address',
         'license_number',
         'status',
+        'store_default_payment_method_id',
         'is_verified',
         'last_login_at',
     ];
@@ -43,6 +46,14 @@ class Store extends Authenticatable
     public const STATUS_ACTIVE = 'active';
     public const STATUS_INACTIVE = 'inactive';
     public const STATUS_SUSPENDED = 'suspended';
+
+    /**
+     * この店舗が属する組織
+     */
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
+    }
 
     /**
      * アクティブな店舗かどうか
@@ -82,5 +93,10 @@ class Store extends Authenticatable
     public function scopeByStatus($query, string $status)
     {
         return $query->where('status', $status);
+    }
+
+    public function defaultPaymentMethod()
+    {
+        return $this->belongsTo(OrganizationPaymentMethod::class, 'store_default_payment_method_id');
     }
 }

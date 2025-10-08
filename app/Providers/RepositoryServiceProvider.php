@@ -15,6 +15,8 @@ use App\Repositories\Store\PurchaseHistory\PurchaseHistoryRepositoryInterface;
 use App\Repositories\Store\PurchaseHistory\PurchaseHistoryRepository;
 use App\Repositories\Store\BidDeadline\BidDeadlineRepositoryInterface;
 use App\Repositories\Store\BidDeadline\BidDeadlineRepository;
+use App\Repositories\Store\BusinessRight\BusinessRightRepositoryInterface;
+use App\Repositories\Store\BusinessRight\BusinessRightRepository;
 use App\Services\Portal\Estimate\EmailVerificationService;
 use App\Services\Portal\Estimate\SmsVerificationService;
 use App\Services\AuthMailService;
@@ -45,6 +47,7 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->bind(BidRepositoryInterface::class, BidRepository::class);
         $this->app->bind(PurchaseHistoryRepositoryInterface::class, PurchaseHistoryRepository::class);
         $this->app->bind(BidDeadlineRepositoryInterface::class, BidDeadlineRepository::class);
+        $this->app->bind(BusinessRightRepositoryInterface::class, BusinessRightRepository::class);
 
         // Repository層の具象クラスも自動解決に任せる（コンストラクタが空の場合）
 

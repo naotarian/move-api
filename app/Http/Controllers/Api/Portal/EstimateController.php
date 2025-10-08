@@ -63,6 +63,9 @@ class EstimateController extends Controller
             ]);
 
             if ($validator->fails()) {
+                \Log::error('EstimateController: Validation failed', [
+                    'errors' => $validator->errors(),
+                ]);
                 return response()->json([
                     'success' => false,
                     'message' => 'バリデーションエラーが発生しました',

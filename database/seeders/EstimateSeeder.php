@@ -114,7 +114,7 @@ class EstimateSeeder extends Seeder
     private function createMinimalLuggageItems(Estimate $estimate): void
     {
         // テスト用の最小限の荷物データ
-        $luggageMasters = LuggageMaster::limit(3)->get();
+        $luggageMasters = LuggageMaster::get();
 
         foreach ($luggageMasters as $luggage) {
             EstimateLuggage::create([

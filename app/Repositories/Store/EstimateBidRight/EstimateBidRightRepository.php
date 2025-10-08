@@ -39,13 +39,12 @@ class EstimateBidRightRepository implements EstimateBidRightRepositoryInterface
         return $estimateBidRight;
     }
 
-    public function create(string $estimateId, string $storeId, string $paymentId): void
+    public function create(string $estimateId, string $storeId): void
     {
         EstimateBidRight::create([
             'estimate_id' => $estimateId,
             'store_id' => $storeId,
             'status' => EstimateBidRight::STATUS_ACTIVE,
-            'payment_id' => $paymentId,
         ]);
     }
 

@@ -27,6 +27,8 @@ class MovingToAddress extends Model
         'estimate_id',
         'zipcode',
         'prefecture',
+        'prefecture_code',
+        'region_code',
         'street_address',
         'building_details',
         'building_type',
@@ -39,6 +41,8 @@ class MovingToAddress extends Model
 
     protected $casts = [
         'estimate_id' => 'string',
+        'prefecture_code' => 'integer',
+        'region_code' => 'integer',
         'latitude' => 'decimal:8',
         'longitude' => 'decimal:8',
     ];

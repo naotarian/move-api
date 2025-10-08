@@ -1,6 +1,6 @@
 <?php
 
-namespace App\UseCases\EstimateBidRight;
+namespace App\UseCases\Store\EstimateBidRight;
 
 use App\Services\Store\EstimateBidRight\Check;
 

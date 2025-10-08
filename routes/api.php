@@ -10,6 +10,8 @@ use App\Http\Controllers\Api\Store\EstimateBidRightController as StoreEstimateBi
 use App\Http\Controllers\Api\Store\StripeController as StoreStripeController;
 use App\Http\Controllers\Api\Store\BidController as StoreBidController;
 use App\Http\Controllers\Api\Store\PurchaseHistoryController as StorePurchaseHistoryController;
+use App\Http\Controllers\Api\Store\CustomerController as StoreCustomerController;
+use App\Http\Controllers\Api\Store\RegionController as StoreRegionController;
 // Admin
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\StoreController;
@@ -91,6 +93,17 @@ Route::prefix('store')->group(function () {
     // 購入履歴関連のAPI
     Route::prefix('purchase-history')->group(function () {
         Route::get('/', [StorePurchaseHistoryController::class, 'index'])->middleware('auth:store'); // 購入履歴一覧
+    });
+
+    // 顧客関連のAPI
+    Route::prefix('customers')->group(function () {
+        Route::get('/', [StoreCustomerController::class, 'index'])->middleware('auth:store'); // 顧客一覧取得
+        // Route::get('/{id}', [StoreCustomerController::class, 'show'])->middleware('auth:store'); // 顧客詳細取得
+    });
+
+    // 地域・都道府県関連のAPI
+    Route::prefix('regions')->group(function () {
+        Route::get('/', [StoreRegionController::class, 'index'])->middleware('auth:store'); // 地域・都道府県一覧取得
     });
 });
 

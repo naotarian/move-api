@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Repositories\EstimateRepository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Collection;
 
 class EstimateService
 {
@@ -13,11 +12,19 @@ class EstimateService
     ) {}
 
     /**
+     * 見積もりが存在するかどうかを取得
+     */
+    public function isExists(string $id): bool
+    {
+        return $this->estimateRepository->isExists($id);
+    }
+
+    /**
      * 見積もり一覧を取得（ページネーション付き）
      */
-    public function getPaginatedEstimates(string $storeId, int $perPage = 20, int $page = 1): LengthAwarePaginator
+    public function getPaginatedEstimates(string $storeId, int $perPage = 20, int $page = 1, array $filters = []): LengthAwarePaginator
     {
-        return $this->estimateRepository->getPaginatedEstimates($storeId, $perPage, $page);
+        return $this->estimateRepository->getPaginatedEstimates($storeId, $perPage, $page, $filters);
     }
 
     /**
@@ -26,6 +33,7 @@ class EstimateService
     public function getEstimateDetail(string $id, ?string $storeId = null): ?array
     {
         $estimate = $this->estimateRepository->findById($id, $storeId);
+        \Log::info($estimate->toArray());
 
         if (!$estimate) {
             return null;
@@ -39,7 +47,7 @@ class EstimateService
      */
     public function formatEstimatesList(LengthAwarePaginator $estimates): array
     {
-        $formattedEstimates = $estimates->map(function ($estimate) {
+        $formattedEstimates = collect($estimates->items())->map(function ($estimate) {
             return $this->formatEstimateListItem($estimate);
         });
 
@@ -99,6 +107,7 @@ class EstimateService
             'has_bid' => isset($estimate->has_bid) ? (bool)$estimate->has_bid : null,
             'bid_amount_min' => isset($estimate->bid_amount_min) ? (int)$estimate->bid_amount_min : null,
             'bid_amount_max' => isset($estimate->bid_amount_max) ? (int)$estimate->bid_amount_max : null,
+            'luggage_by_category' => $this->formatLuggageByCategory($estimate->luggageItems),
             'created_at' => $estimate->created_at->format('Y-m-d H:i:s'),
             'updated_at' => $estimate->updated_at->format('Y-m-d H:i:s'),
         ];
@@ -109,7 +118,6 @@ class EstimateService
      */
     private function formatEstimateData($estimate): array
     {
-        \Log::info($estimate->toArray());
         return [
             'id' => $estimate->id,
             'customer_name' => $estimate->name,
@@ -121,11 +129,11 @@ class EstimateService
                 'prefecture' => $estimate->movingFromAddress->prefecture,
                 'city' => $estimate->movingFromAddress->city,
                 'street_address' => $estimate->movingFromAddress->street_address,
-                'building_name' => $estimate->movingFromAddress->building_details,
+                'building_details' => $estimate->movingFromAddress->building_details,
                 'building_type' => $this->formatBuildingType($estimate->movingFromAddress->building_type),
-                'floor_plan' => $estimate->movingFromAddress->room_layout,
-                'floor_number' => $estimate->movingFromAddress->floor,
-                'has_elevator' => $this->formatElevator($estimate->movingFromAddress->elevator),
+                'room_layout' => $estimate->movingFromAddress->room_layout,
+                'floor' => $estimate->movingFromAddress->floor,
+                'elevator' => $estimate->movingFromAddress->elevator,
                 'latitude' => $estimate->movingFromAddress->latitude,
                 'longitude' => $estimate->movingFromAddress->longitude,
             ],
@@ -134,16 +142,16 @@ class EstimateService
                 'prefecture' => $estimate->movingToAddress->prefecture,
                 'city' => $estimate->movingToAddress->city,
                 'street_address' => $estimate->movingToAddress->street_address,
-                'building_name' => $estimate->movingToAddress->building_details,
+                'building_details' => $estimate->movingToAddress->building_details,
                 'building_type' => $this->formatBuildingType($estimate->movingToAddress->building_type),
-                'floor_plan' => $estimate->movingToAddress->room_layout,
-                'floor_number' => $estimate->movingToAddress->floor,
-                'has_elevator' => $this->formatElevator($estimate->movingToAddress->elevator),
+                'room_layout' => $estimate->movingToAddress->room_layout,
+                'floor' => $estimate->movingToAddress->floor,
+                'elevator' => $estimate->movingToAddress->elevator,
                 'latitude' => $estimate->movingToAddress->latitude,
                 'longitude' => $estimate->movingToAddress->longitude,
             ],
             'moving_date_type' => $estimate->moving_date_type,
-            'moving_date' => $estimate->moving_specific_date,
+            'moving_specific_date' => $estimate->moving_specific_date,
             'moving_year_month' => $estimate->moving_year_month,
             'moving_period' => $estimate->moving_period,
             'people_count' => $estimate->people_count,
@@ -167,17 +175,8 @@ class EstimateService
             'has_bid' => isset($estimate->has_bid) ? (bool)$estimate->has_bid : null,
             'bid_amount_min' => isset($estimate->bid_amount_min) ? (int)$estimate->bid_amount_min : null,
             'bid_amount_max' => isset($estimate->bid_amount_max) ? (int)$estimate->bid_amount_max : null,
-            'luggage_items' => $estimate->luggageItems->map(function ($item) {
-                return [
-                    'id' => $item->id,
-                    'quantity' => $item->quantity,
-                    'luggage' => [
-                        'id' => $item->luggage->id,
-                        'name' => $item->luggage->name,
-                        'category' => $item->luggage->category->name,
-                    ],
-                ];
-            })->toArray(),
+            'luggage_by_category' => $this->formatLuggageByCategory($estimate->luggageItems),
+            'bid_ranking_list' => $estimate->bid_ranking_list,
             'created_at' => $estimate->created_at->format('Y-m-d H:i:s'),
             'updated_at' => $estimate->updated_at->format('Y-m-d H:i:s'),
         ];
@@ -211,14 +210,33 @@ class EstimateService
     }
 
     /**
-     * エレベーターを日本語に変換
+     * 荷物をカテゴリー別にグループ化
+     *
+     * @param \Illuminate\Database\Eloquent\Collection $luggageItems
+     * @return array
      */
-    private function formatElevator(string $elevator): string
+    private function formatLuggageByCategory($luggageItems): array
     {
-        return match ($elevator) {
-            'yes' => 'あり',
-            'no' => 'なし',
-            default => $elevator,
-        };
+        if (!$luggageItems) {
+            return [];
+        }
+
+        $groupedLuggage = [];
+
+        foreach ($luggageItems as $item) {
+            $categoryName = $item->luggage->category->name ?? 'その他';
+
+            if (!isset($groupedLuggage[$categoryName])) {
+                $groupedLuggage[$categoryName] = [];
+            }
+
+            $groupedLuggage[$categoryName][] = [
+                'name' => $item->luggage->name,
+                'quantity' => $item->quantity,
+                'sub_label' => $item->luggage->sub_label ?? null,
+            ];
+        }
+
+        return $groupedLuggage;
     }
 }

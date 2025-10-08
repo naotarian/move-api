@@ -27,7 +27,6 @@ class EstimateBidRight extends Model
         'estimate_id',
         'store_id',
         'status',
-        'payment_id',
     ];
 
     /**

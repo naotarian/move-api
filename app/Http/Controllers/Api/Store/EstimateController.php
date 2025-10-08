@@ -8,6 +8,7 @@ use App\UseCases\Estimate\GetEstimateDetailUseCase;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class EstimateController extends Controller
 {
@@ -27,15 +28,23 @@ class EstimateController extends Controller
             $perPage = $request->get('per_page', 20);
             $page = $request->get('page', 1);
 
+            // フィルタ条件を取得
+            $filters = [
+                'to_region_code' => $request->get('to_region_code'),
+                'to_prefecture_code' => $request->get('to_prefecture_code'),
+                'from_region_code' => $request->get('from_region_code'),
+                'from_prefecture_code' => $request->get('from_prefecture_code'),
+            ];
+
             // UseCaseを実行
-            $result = $this->getEstimatesListUseCase->execute($storeId, $perPage, $page);
+            $result = $this->getEstimatesListUseCase->execute($storeId, $perPage, $page, $filters);
             return response()->json([
                 'success' => true,
                 'data' => $result['data'],
                 'pagination' => $result['pagination'],
             ]);
         } catch (\Exception $e) {
-            \Log::error('見積もり一覧取得コントローラーエラー: ' . $e->getMessage(), [
+            Log::error('見積もり一覧取得コントローラーエラー: ' . $e->getMessage(), [
                 'request' => $request->all(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -71,7 +80,7 @@ class EstimateController extends Controller
                 'data' => $estimate,
             ]);
         } catch (\Exception $e) {
-            \Log::error('見積もり詳細取得コントローラーエラー: ' . $e->getMessage(), [
+            Log::error('見積もり詳細取得コントローラーエラー: ' . $e->getMessage(), [
                 'estimate_id' => $id,
                 'trace' => $e->getTraceAsString()
             ]);

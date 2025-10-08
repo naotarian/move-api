@@ -16,6 +16,8 @@ return new class extends Migration
             $table->foreignUlid('estimate_id')->constrained('estimates')->onDelete('cascade');
             $table->string('zipcode', 10)->comment('郵便番号');
             $table->string('prefecture', 50)->comment('都道府県');
+            $table->integer('prefecture_code')->nullable()->comment('都道府県コード (1-47)');
+            $table->integer('region_code')->nullable()->comment('地域コード (1-8)');
             $table->string('street_address', 255)->comment('番地');
             $table->string('building_details', 255)->nullable()->comment('建物名・部屋番号');
             $table->string('building_type', 50)->comment('建物のタイプ');
@@ -29,6 +31,9 @@ return new class extends Migration
             // インデックス
             $table->index('estimate_id', 'idx_moving_from_addresses_estimate_id');
             $table->index(['prefecture', 'zipcode'], 'idx_moving_from_addresses_location');
+            $table->index('prefecture_code', 'idx_moving_from_addresses_prefecture_code');
+            $table->index('region_code', 'idx_moving_from_addresses_region_code');
+            $table->index(['region_code', 'prefecture_code'], 'idx_moving_from_addresses_region_prefecture');
         });
     }
 

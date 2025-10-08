@@ -6,29 +6,46 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 // usecase
-use App\UseCases\EstimateBidRight\CheckBidRight;
+use App\UseCases\Store\EstimateBidRight\CheckBidRight;
+use App\UseCases\Store\EstimateBidRight\StoreBidRightUseCase;
 
 class EstimateBidRightController extends Controller
 {
     private $checkBidRight;
-
-    public function __construct(CheckBidRight $checkBidRight)
+    private $storeBidRightUseCase;
+    public function __construct(CheckBidRight $checkBidRight, StoreBidRightUseCase $storeBidRightUseCase)
     {
         $this->checkBidRight = $checkBidRight;
+        $this->storeBidRightUseCase = $storeBidRightUseCase;
     }
 
     public function store(Request $request): JsonResponse
     {
+        try {
+            $this->storeBidRightUseCase->execute($request->estimate_id);
+        } catch (\Exception $e) {
+            Log::error('入札権作成に失敗しました', [
+                'error' => $e->getMessage(),
+                'estimate_id' => $request->estimate_id,
+                'status' => $e->getCode(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], $e->getCode());
+        }
+
         return response()->json([
             'success' => true,
             'message' => '入札権作成に成功しました',
-        ]);
+        ], 201);
     }
 
     public function check(Request $request): JsonResponse
     {
-        \Log::info('request', ['request' => $request->all()]);
+        Log::info('request', ['request' => $request->all()]);
         $validator = Validator::make($request->all(), [
             'estimate_id' => 'required|string',
             'store_id' => 'required|string',
@@ -73,7 +90,6 @@ class EstimateBidRightController extends Controller
             ], 403);
         }
 
-        \Log::info('result', ['result' => $hasBidRight]);
         return response()->json([
             'data' => $responseData,
             'message' => '入札権確認に成功しました',

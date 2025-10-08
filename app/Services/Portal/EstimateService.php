@@ -55,6 +55,11 @@ class EstimateService
             $fromAddressData['longitude'] = $fromCoords['lng'];
         }
 
+        // 地域・都道府県コードを取得
+        $fromCodes = $this->geocodingService->getRegionAndPrefectureCodes($fromAddressData);
+        $fromAddressData['prefecture_code'] = $fromCodes['prefecture_code'];
+        $fromAddressData['region_code'] = $fromCodes['region_code'];
+
         $estimate->movingFromAddress()->create($fromAddressData);
 
         // 住所データの準備（引越し先）
@@ -84,6 +89,11 @@ class EstimateService
             $toAddressData['latitude'] = $toCoords['lat'];
             $toAddressData['longitude'] = $toCoords['lng'];
         }
+
+        // 地域・都道府県コードを取得
+        $toCodes = $this->geocodingService->getRegionAndPrefectureCodes($toAddressData);
+        $toAddressData['prefecture_code'] = $toCodes['prefecture_code'];
+        $toAddressData['region_code'] = $toCodes['region_code'];
 
         $estimate->movingToAddress()->create($toAddressData);
 

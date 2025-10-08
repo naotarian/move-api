@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
+use App\Services\Common\RegionPrefectureService;
 
 /**
  * Google Geocoding API サービス
@@ -138,5 +139,38 @@ class GeocodingService
         }
 
         return implode(' ', $parts);
+    }
+
+    /**
+     * 住所から地域・都道府県コードを取得
+     *
+     * @param array $addressData 住所データ
+     * @return array ['prefecture_code' => int|null, 'region_code' => int|null]
+     */
+    public function getRegionAndPrefectureCodes(array $addressData): array
+    {
+        $fullAddress = $this->buildFullAddress($addressData);
+        $result = RegionPrefectureService::getRegionAndPrefecture($fullAddress);
+
+        if (!$result) {
+            Log::warning('GeocodingService: Could not determine region/prefecture codes', [
+                'address' => $fullAddress
+            ]);
+            return ['prefecture_code' => null, 'region_code' => null];
+        }
+
+        // 都道府県名から都道府県コードを取得
+        $prefectureResult = RegionPrefectureService::getModelsByPrefectureName($result['prefecture']);
+        if (!$prefectureResult) {
+            Log::warning('GeocodingService: Could not find prefecture code', [
+                'prefecture' => $result['prefecture']
+            ]);
+            return ['prefecture_code' => null, 'region_code' => null];
+        }
+
+        return [
+            'prefecture_code' => $prefectureResult['prefecture']->code,
+            'region_code' => $prefectureResult['region']->code
+        ];
     }
 }

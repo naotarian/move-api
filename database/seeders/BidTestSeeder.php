@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\Estimate;
 use App\Models\Store;
-use App\Models\Payment;
 use App\Models\EstimateBidRight;
 use App\Models\Bid;
 use Illuminate\Database\Seeder;
@@ -45,7 +44,6 @@ class BidTestSeeder extends Seeder
         }
 
         $totalCreated = [
-            'payments' => 0,
             'bid_rights' => 0,
             'bids' => 0,
         ];
@@ -132,15 +130,11 @@ class BidTestSeeder extends Seeder
 
             // 全ての店舗に入札権を付与
             foreach ($stores as $storeIndex => $store) {
-                // 1. Payment作成
-                $payment = $this->createPayment($estimate, $store);
-                $totalCreated['payments']++;
-
-                // 2. EstimateBidRight作成
-                $bidRight = $this->createEstimateBidRight($estimate, $store, $payment);
+                // 1. EstimateBidRight作成
+                $bidRight = $this->createEstimateBidRight($estimate, $store);
                 $totalCreated['bid_rights']++;
 
-                // 3. 指定されたパターンに従ってBid作成（パターンに含まれる店舗のみ）
+                // 2. 指定されたパターンに従ってBid作成（パターンに含まれる店舗のみ）
                 if ($storeIndex < $bidCount) {
                     $bidData = $pattern['bids'][$storeIndex];
                     $this->createBid($bidRight, $bidData['min'], $bidData['max']);
@@ -157,7 +151,6 @@ class BidTestSeeder extends Seeder
         $this->command->table(
             ['データ種類', '作成数'],
             [
-                ['決済 (Payments)', $totalCreated['payments']],
                 ['入札権 (EstimateBidRights)', $totalCreated['bid_rights']],
                 ['入札 (Bids)', $totalCreated['bids']],
             ]
@@ -170,37 +163,14 @@ class BidTestSeeder extends Seeder
     }
 
     /**
-     * 決済データを作成
-     */
-    private function createPayment(Estimate $estimate, Store $store): Payment
-    {
-        return Payment::create([
-            'estimate_id' => $estimate->id,
-            'store_id' => $store->id,
-            'amount_excluding_tax' => 500, // 税抜き500円
-            'amount_including_tax' => 500,  // 税込み500円（税率0%）
-            'tax_amount' => 0,
-            'tax_rate' => 0,
-            'payment_date' => Carbon::now()->subHours(rand(1, 72)),
-            'payment_method' => 1, // クレジットカード
-            'status' => 1, // 成功
-            'provider' => 'stripe',
-            'provider_id' => 'pi_test_' . Str::random(24),
-            'provider_url' => null,
-            'failure_reason' => null,
-        ]);
-    }
-
-    /**
      * 入札権データを作成
      */
-    private function createEstimateBidRight(Estimate $estimate, Store $store, Payment $payment): EstimateBidRight
+    private function createEstimateBidRight(Estimate $estimate, Store $store): EstimateBidRight
     {
         return EstimateBidRight::create([
             'estimate_id' => $estimate->id,
             'store_id' => $store->id,
             'status' => 1, // 有効
-            'payment_id' => $payment->id,
         ]);
     }
 

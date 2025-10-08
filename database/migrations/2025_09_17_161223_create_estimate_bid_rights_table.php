@@ -19,14 +19,13 @@ return new class extends Migration
             $table->foreignUlid('store_id')->constrained('stores')->onDelete('cascade');
             // ステータス
             $table->tinyInteger('status')->comment('ステータス 1:有効 2:無効');
-            // 支払いID
-            $table->foreignUlid('payment_id')->constrained('payments')->onDelete('cascade');
             // estimate_idとstore_idの組み合わせでユニーク
             $table->unique(['estimate_id', 'store_id']);
             // インデックス
             $table->index('estimate_id');
             $table->index('store_id');
             $table->index('status');
+            $table->index('created_at');
             $table->timestamps();
         });
     }
